@@ -33,12 +33,12 @@ module.exports = async function() {
 
   // настраиваем отношения
   lesson.belongsToMany(teacher, {
-    through: lessonTeachers, foreignKey: 'teacher_id'});
-  teacher.belongsToMany(lesson, {
     through: lessonTeachers, foreignKey: 'lesson_id'});
+  teacher.belongsToMany(lesson, {
+    through: lessonTeachers, foreignKey: 'teacher_id'});
   lesson.belongsToMany(student, {
-    through: lessonStudents, foreignKey: 'student_id'});
-  student.belongsToMany(lesson, {
     through: lessonStudents, foreignKey: 'lesson_id'});
+  student.belongsToMany(lesson, {
+    through: lessonStudents, foreignKey: 'student_id'});
   return sequelize;
 };
