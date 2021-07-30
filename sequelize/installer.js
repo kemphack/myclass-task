@@ -4,7 +4,7 @@ const models = require('./models');
 // Подключаем переменные среды
 require('dotenv').config();
 
-module.exports = async function() {
+async function init() {
   sequelize = new Sequelize({
     dialect: 'postgres',
     username: process.env.DB_USER,
@@ -15,6 +15,10 @@ module.exports = async function() {
   });
   await sequelize.authenticate();
   // инициализируем все модели
+  return await initModels(sequelize);
+};
+
+async function initModels(sequelize) {
   await Promise.all(
       models.map(
           (createModel) => {
@@ -41,4 +45,9 @@ module.exports = async function() {
   student.belongsToMany(lesson, {
     through: lessonStudents, foreignKey: 'student_id'});
   return sequelize;
+}
+
+module.exports = {
+  init,
+  initModels,
 };
