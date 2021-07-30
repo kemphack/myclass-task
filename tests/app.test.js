@@ -26,10 +26,6 @@ describe('backend test', () => {
           title: 'whatever',
           days: [0, 1, 2, 3],
         })
-        .expect((res) => {
-          if (res.body.error) {
-            throw new Error(res.body.error);
-          }
-        });
+        .expect(200);
   });
 });

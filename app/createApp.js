@@ -140,22 +140,24 @@ module.exports = (sequelize) => {
     const lessonsPayload = dates.map((date) => ({
       date,
       title,
+      status: 0,
     }));
     try {
       const lessons = await sequelize.transaction(async (t) => {
         const lessons =
           await sequelize.models.lesson.bulkCreate(
               lessonsPayload,
-              {transaction: t},
+              {transaction: t, validate: true},
           );
-
+        console.log(lessons);
         for (lesson of lessons) {
-          await lesson.addTeacher(teacherIds);
+          await lesson.addTeachers(teacherIds, {transaction: t});
         }
         return lessons;
       });
-      answerWithResult(res, lessons);
+      answerWithResult(res, lessons.map((lesson) => lesson.id));
     } catch (e) {
+      console.error(e);
       answerWithError(res, e.original.detail);
     }
   });
