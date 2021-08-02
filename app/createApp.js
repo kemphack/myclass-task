@@ -110,7 +110,7 @@ module.exports = (sequelize) => {
       const {studentsCount} = filter;
       if (studentsCount.length == 1) {
         query.where[nanoid()] =
-          sequelize.literal(countVisits+'='+studentsCount);
+          sequelize.literal(countVisits+'='+studentsCount[0]);
       } else {
         query.where[nanoid()] =
           sequelize.literal(countVisits+'>='+studentsCount[0]);

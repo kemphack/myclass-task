@@ -68,7 +68,7 @@ const lessonsScheme = Joi.object({
     Joi.number().positive().integer().max(datesLimit),
   lastDate:
     Joi.date()
-        .less(
+        .max(
             Joi.ref('firstDate', {
               adjust: (date) => {
                 return new Date(date.getTime() + 365*24*60*60*1000);
@@ -77,11 +77,12 @@ const lessonsScheme = Joi.object({
         )
         .greater(Joi.ref('firstDate'))
         .error((errors) => {
-          const dateLessIndex = errors.findIndex((el) => el.code = 'date.less');
+          const dateLessIndex = errors.findIndex((el) => el.code = 'date.max');
           if (dateLessIndex != -1) {
             const error = errors[dateLessIndex].local;
             const message =
-            `"${error.key}" must be less than year ago of "${error.limit.key}"`;
+              `"${error.key}" must not bigger than year ago of `+
+              `"${error.limit.key}"`;
             errors[dateLessIndex] = new Error(message);
           }
           return errors;
