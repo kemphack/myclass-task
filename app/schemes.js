@@ -55,11 +55,13 @@ const datesLimit = 300;
 const lessonsScheme = Joi.object({
   teacherIds: Joi.array()
       .items(Joi.number().positive().integer())
+      .min(1)
       .unique()
       .required(),
   title: Joi.string().max(100).required(),
   days: Joi.array()
       .items(Joi.number().integer().min(0).max(6))
+      .min(1)
       .unique()
       .required(),
   firstDate:
@@ -75,9 +77,9 @@ const lessonsScheme = Joi.object({
               },
             }),
         )
-        .greater(Joi.ref('firstDate'))
+        .min(Joi.ref('firstDate'))
         .error((errors) => {
-          const dateLessIndex = errors.findIndex((el) => el.code = 'date.max');
+          const dateLessIndex = errors.findIndex((el) => el.code == 'date.max');
           if (dateLessIndex != -1) {
             const error = errors[dateLessIndex].local;
             const message =
