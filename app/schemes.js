@@ -75,7 +75,17 @@ const lessonsScheme = Joi.object({
               },
             }),
         )
-        .greater(Joi.ref('firstDate')),
+        .greater(Joi.ref('firstDate'))
+        .error((errors) => {
+          const dateLessIndex = errors.findIndex((el) => el.code = 'date.less');
+          if (dateLessIndex != -1) {
+            const error = errors[dateLessIndex].local;
+            const message =
+            `"${error.key}" must be less than year ago of "${error.limit.key}"`;
+            errors[dateLessIndex] = new Error(message);
+          }
+          return errors;
+        }),
 }).xor('lastDate', 'lessonsCount');
 
 module.exports = {

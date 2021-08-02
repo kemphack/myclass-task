@@ -157,7 +157,7 @@ module.exports = (sequelize) => {
         const lessons =
           await sequelize.models.lesson.bulkCreate(
               lessonsPayload,
-              {transaction: t, validate: true},
+              {transaction: t},
           );
         console.log(lessons);
         for (lesson of lessons) {
