@@ -2,6 +2,7 @@ const express = require('express');
 const {Op} = require('sequelize');
 const {nanoid} = require('nanoid');
 const schemes = require('./schemes');
+const { datesLimit } = require('./schemes');
 
 function answerWithError(res, errorMsg) {
   res.status(400).send({
@@ -39,6 +40,7 @@ module.exports = (sequelize) => {
         include: [[sequelize.literal(countVisits), 'visitCount']],
       },
       include: [{
+        require: false,
         model: sequelize.models.teacher,
         through: {
           attributes: [],
@@ -59,11 +61,13 @@ module.exports = (sequelize) => {
     };
 
     // status добавляется в where самого занятия (фильтруем занятия)
-    if (filter.status) {
-      query.where.status = filter.status;
+    if (filter.status !== undefined) {
+      query.where.status = {
+        [Op.eq]: filter.status,
+      };
     }
     // date добавляется в where самого занятия (фильтруем занятия)
-    if (filter.date) {
+    if (filter.date !== undefined) {
       const {date} = filter;
       // в случае если дано одно число
       if (date.length == 1) {
@@ -85,23 +89,28 @@ module.exports = (sequelize) => {
     при этом важно что здесь же и создается where, т.к. where
     сам по себе накладывает условие на наличие хотя бы
     одного учителя. */
-    if (filter.teacherIds) {
-      query.include[0].where = {
-        id: {
-          [Op.in]: filter.teacherIds,
-        },
-      };
+    if (filter.teacherIds !== undefined) {
+      const teacherCondition = `(SELECT COUNT(*) FROM "lesson_teachers" lt
+        WHERE "lt"."lesson_id"=lesson.id AND 
+        "lt"."teacher_id" in (${filter.teacherIds.join(',')}))
+        >0`;
+      query.where[nanoid()] = sequelize.literal(teacherCondition);
+      // query.include[0].where = {
+      //   id: {
+      //     [Op.in]: filter.teacherIds,
+      //   },
+      // };
     }
     /* здесь добавляется подзапрос countVisits, чтобы ограничить
     количество пользователей посредством nanoid(),
     т.к. sequelize требует обязательно указать поле,
     издержки библиотеки
     */
-    if (filter.studentsCount) {
+    if (filter.studentsCount !== undefined) {
       const {studentsCount} = filter;
       if (studentsCount.length == 1) {
         query.where[nanoid()] =
-          sequelize.literal(countVisits+'>='+studentsCount);
+          sequelize.literal(countVisits+'='+studentsCount);
       } else {
         query.where[nanoid()] =
           sequelize.literal(countVisits+'>='+studentsCount[0]);
@@ -133,10 +142,11 @@ module.exports = (sequelize) => {
     }
     dates = dates.filter((date) => days.includes(date.getDay()));
     if (lastDate) {
-      dates = dates.filter((date) => date < lastDate);
+      dates = dates.filter((date) => date <= lastDate);
     } else {
       dates = dates.slice(0, lessonsCount);
     }
+    dates = dates.slice(0, datesLimit);
     const lessonsPayload = dates.map((date) => ({
       date,
       title,

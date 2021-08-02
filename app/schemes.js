@@ -51,6 +51,7 @@ const filterScheme = Joi.object({
   studentsCount: Joi.custom(validateCount).optional(),
 });
 
+const datesLimit = 300;
 const lessonsScheme = Joi.object({
   teacherIds: Joi.array()
       .items(Joi.number().positive().integer())
@@ -64,7 +65,7 @@ const lessonsScheme = Joi.object({
   firstDate:
     Joi.date(),
   lessonsCount:
-    Joi.number().positive().integer().max(300),
+    Joi.number().positive().integer().max(datesLimit),
   lastDate:
     Joi.date()
         .less(
@@ -80,5 +81,6 @@ const lessonsScheme = Joi.object({
 module.exports = {
   filter: filterScheme,
   lessons: lessonsScheme,
+  datesLimit,
   dateToSql,
 };
