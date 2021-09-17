@@ -1,6 +1,6 @@
 const express = require('express');
-const {Op} = require('sequelize');
-const {nanoid} = require('nanoid');
+const { Op } = require('sequelize');
+const { nanoid } = require('nanoid');
 const schemes = require('./schemes');
 const { datesLimit } = require('./schemes');
 
@@ -68,7 +68,7 @@ module.exports = (sequelize) => {
     }
     // date добавляется в where самого занятия (фильтруем занятия)
     if (filter.date !== undefined) {
-      const {date} = filter;
+      const { date } = filter;
       // в случае если дано одно число
       if (date.length == 1) {
         query.where.date = {
@@ -95,11 +95,6 @@ module.exports = (sequelize) => {
         "lt"."teacher_id" in (${filter.teacherIds.join(',')}))
         >0`;
       query.where[nanoid()] = sequelize.literal(teacherCondition);
-      // query.include[0].where = {
-      //   id: {
-      //     [Op.in]: filter.teacherIds,
-      //   },
-      // };
     }
     /* здесь добавляется подзапрос countVisits, чтобы ограничить
     количество пользователей посредством nanoid(),
@@ -107,15 +102,15 @@ module.exports = (sequelize) => {
     издержки библиотеки
     */
     if (filter.studentsCount !== undefined) {
-      const {studentsCount} = filter;
+      const { studentsCount } = filter;
       if (studentsCount.length == 1) {
         query.where[nanoid()] =
-          sequelize.literal(countVisits+'='+studentsCount[0]);
+          sequelize.literal(countVisits + '=' + studentsCount[0]);
       } else {
         query.where[nanoid()] =
-          sequelize.literal(countVisits+'>='+studentsCount[0]);
+          sequelize.literal(countVisits + '>=' + studentsCount[0]);
         query.where[nanoid()] =
-          sequelize.literal(countVisits+'<='+studentsCount[1]);
+          sequelize.literal(countVisits + '<=' + studentsCount[1]);
       }
     }
     const queryResult = await sequelize.models.lesson.findAll(query);
@@ -137,7 +132,7 @@ module.exports = (sequelize) => {
     } = validResult.value;
     let dates = new Array(365);
     for (let i = 0; i < dates.length; i++) {
-      const timestamp = firstDate.getTime() + i*24*60*60*1000;
+      const timestamp = firstDate.getTime() + i * 24 * 60 * 60 * 1000;
       dates[i] = new Date(timestamp);
     }
     dates = dates.filter((date) => days.includes(date.getDay()));
@@ -150,22 +145,34 @@ module.exports = (sequelize) => {
     const lessonsPayload = dates.map((date) => ({
       date,
       title,
+      teacherIds,
       status: 0,
     }));
     try {
       const lessons = await sequelize.transaction(async (t) => {
         const lessons =
           await sequelize.models.lesson.bulkCreate(
-              lessonsPayload,
-              {transaction: t},
+            lessonsPayload,
+            { transaction: t },
           );
         console.log(lessons);
-        for (lesson of lessons) {
-          await lesson.addTeachers(teacherIds, {transaction: t});
+        const lessonIds = lessons.map((lesson) => lesson.id);
+        const junctionPayload = new Array(lessonIds.length * teacherIds.length);
+        for (let i = 0; i < lessonIds.length; i++) {
+          for (let j = 0; j < teacherIds.length; j++) {
+            junctionPayload[i * teacherIds.length + j] = {
+              lessonId: lessonIds[i],
+              teacherId: teacherIds[j]
+            }
+          }
         }
-        return lessons;
+        await sequelize.models.lessonTeachers.bulkCreate(
+          junctionPayload,
+          { transaction: t },
+        );
+        return lessonIds;
       });
-      answerWithResult(res, lessons.map((lesson) => lesson.id));
+      answerWithResult(res, lessons);
     } catch (e) {
       console.error(e);
       answerWithError(res, e.original.detail);
